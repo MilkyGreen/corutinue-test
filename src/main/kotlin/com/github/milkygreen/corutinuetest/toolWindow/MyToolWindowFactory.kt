@@ -10,6 +10,8 @@ import com.intellij.ui.components.JBPanel
 import com.intellij.ui.content.ContentFactory
 import com.github.milkygreen.corutinuetest.MyBundle
 import com.github.milkygreen.corutinuetest.services.MyProjectService
+import com.intellij.openapi.application.EDT
+import kotlinx.coroutines.*
 import javax.swing.JButton
 
 
@@ -29,7 +31,14 @@ class MyToolWindowFactory : ToolWindowFactory {
 
     class MyToolWindow(toolWindow: ToolWindow) {
 
+        suspend fun simulateLongRunningTask(): String = withContext(Dispatchers.IO) {
+            // 模拟耗时操作
+            Thread.sleep(3000)
+            "Task Completed"
+        }
+
         private val service = toolWindow.project.service<MyProjectService>()
+        private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
         fun getContent() = JBPanel<JBPanel<*>>().apply {
             val label = JBLabel(MyBundle.message("randomLabel", "?"))
@@ -37,7 +46,15 @@ class MyToolWindowFactory : ToolWindowFactory {
             add(label)
             add(JButton(MyBundle.message("shuffle")).apply {
                 addActionListener {
-                    label.text = MyBundle.message("randomLabel", service.getRandomNumber())
+                    scope.launch{
+                        val result = withContext(Dispatchers.IO) {
+                            simulateLongRunningTask()
+                        }
+                        val num = withContext(Dispatchers.Default){service.getRandomNumber()}
+                        launch(Dispatchers.EDT) {
+                            label.text = result + num
+                        }
+                    }
                 }
             })
         }

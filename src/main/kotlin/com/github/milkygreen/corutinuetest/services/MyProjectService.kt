@@ -4,6 +4,8 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.project.Project
 import com.github.milkygreen.corutinuetest.MyBundle
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @Service(Service.Level.PROJECT)
 class MyProjectService(project: Project) {
@@ -13,5 +15,7 @@ class MyProjectService(project: Project) {
         thisLogger().warn("Don't forget to remove all non-needed sample code files with their corresponding registration entries in `plugin.xml`.")
     }
 
-    fun getRandomNumber() = (1..100).random()
+    suspend fun getRandomNumber(): Int = withContext(Dispatchers.IO) {
+        (1..100).random()
+    }
 }
